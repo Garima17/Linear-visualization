@@ -2,6 +2,11 @@ let coarse_graph_data;
 let center_positions_spiral;
 let link_data;
 let node_to_node_link_data
+let community_size_data
+let heighest_density_data
+let heighest_degree_data
+let coarse_graph
+let number_of_community_connections_data
 
 //for community size barchart
 function showdata_count(data){
@@ -10,6 +15,7 @@ function showdata_count(data){
     x : d.community,
     y : parseFloat(d.count)
   }))
+  data = data.sort(function(a,b){return d3.descending(a.y,b.y)})
   var svg = d3.select("#barchart-no_of_nodes")
   initializeChart(svg),
   draw(data, "Community", "Number_of_nodes", "Number of nodes in each community");
@@ -22,9 +28,10 @@ function showdata_density(data){
     x : d.community,
     y : parseFloat(d.density)
   }))
+  data = data.sort(function(a,b){return d3.descending(a.y,b.y)})
   var svg = d3.select("#barchart-density")
   initializeChart(svg),
-  draw(data, "Community", "Density", "Density of edges in each community");
+  draw(data, "Community", "Edge_Density", "Density of edges in each community");
 }
 
 //for max degree barchart
@@ -34,9 +41,24 @@ function showdata_hdegree(data){
     x : d.community,
     y : +d.h_degree
   }))
+  data = data.sort(function(a,b){return d3.descending(a.y,b.y)})
   var svg = d3.select("#barchart-h_degree")
   initializeChart(svg),
-  draw(data, "Community", "Max-Degree", "Max-Degree in each community");
+  draw(data, "Community", "Max Degree", "Max-Degree in each community");
+}
+
+
+//for community connections barchart
+function showdata_connections(data){
+  //transform data
+  data = data.map(d=> ({
+    x : d.community,
+    y : +d.connections
+  }))
+  data = data.sort(function(a,b){return d3.descending(a.y,b.y)})
+  var svg = d3.select("#heatmap-connectivity")
+  initializeChart(svg),
+  draw(data, "Community", "Connections", "Inter-Community connections of communities");
 }
 
 //for connection heatmap
@@ -133,15 +155,44 @@ function showdata_spiral_community_chart(data){
     console.log(width, height)
     initializeSpiralChart(svg, height, width)
 
+    //community ranking data 
+      //transform data
+      community_size_data = data[6].map(d=> ({
+        community : +d.community,
+        size : parseFloat(d.count)
+      }))
+
+      //transform data
+      heighest_density_data = data[7].map(d=> ({
+        community : +d.community,
+        density : parseFloat(d.density)
+      }))
+
+      //transform data
+      heighest_degree_data = data[8].map(d=> ({
+        community : +d.community,
+        degree : +d.h_degree
+      }))
+
+      number_of_community_connections_data = data[11].map(d=> ({
+        community : +d.community,
+        connections : +d.connections
+      }))
+
+      coarse_graph = data[9]
+
+
   //coarse_graph_data
     coarse_graph_data = data[1]
     center_positions_spiral = string_to_numbers_graph_centers(coarse_graph_data)
   //transforming the coordinates
     center_positions_spiral=transform_graph_centers(center_positions_spiral, height, width)
+    console.log(center_positions_spiral)
     //transform_link data
     link_data = transform_link_data(data[2])
     //connections list
     connections_list = data[4]
+    community_connections_list = data[10]
     extent_of_centralities_after_removing_outliers = data[5]
     //console.log(connections_list)
     optimal_no_of_nodes = optimal_no_of_nodes(data[6]) //added by bhanu
@@ -155,12 +206,13 @@ function showdata_spiral_community_chart(data){
     console.log(data)
 
   //calculate final x and y position for each point
+  //data= computing_spiral_positions_barchart_inspired((center_positions_spiral, data, optimal_no_of_nodes, height, width))
     data = computing_spiral_positions(center_positions_spiral, data, optimal_no_of_nodes, height, width)
     // added one more variable optimal_no_of_nodes by bhanu in computing_spiral_positions function
     global_data = data //changes with interactions
     global_data_unchanged = data
     global_data_sorted = data
-    global_data_sorted.sort(function(a,b){return d3.ascending(a.node, b.node)})
+    global_data_sorted.sort(function(a,b){return d3.descending(a.node, b.node)})
     console.log(global_data_sorted)
     global_data = global_data_sorted
 
@@ -176,7 +228,6 @@ function showdata_spiral_community_chart(data){
 
     prepare_data = computing_spiral_positions(center_positions_spiral, prepare_data,optimal_no_of_nodes, height, width)
     global_data = prepare_data
-
     //below two lines are removed in latest code need to check with garima
     //let svg = d3.select("#chart")
     //initializeSpiralChart(svg, height, width)
@@ -231,7 +282,8 @@ function showdata_spiral_community_chart(data){
 d3.csv("commuity_count.csv").then(showdata_count)
 d3.csv("commuity_density.csv").then(showdata_density)
 d3.csv("commuity_h_degree.csv").then(showdata_hdegree)
-d3.csv("heatmap_data.csv").then(showdata_connectivity_heatmap)
+d3.csv("commuity_number_of_connections.csv").then(showdata_connections)
+//d3.csv("heatmap_data.csv").then(showdata_connectivity_heatmap)
 d3.csv("facebook_data_transformed_new.csv").then(show_table_data)
 
 Promise.all([
@@ -241,5 +293,10 @@ Promise.all([
   d3.csv("node_to_node_link_data.csv"),
   d3.json("connection_list.json"),
   d3.json("new_extent_without_outliers_for_colorcoding.json"),
-  d3.csv("commuity_count.csv") //added by bhanu
+  d3.csv("commuity_count.csv"), 
+  d3.csv("commuity_density.csv"),
+  d3.csv("commuity_h_degree.csv"),
+  d3.json("coarse_graph_data.json"),
+  d3.json("community_connection_list.json"),
+  d3.csv("commuity_number_of_connections.csv")
   ]).then(showdata_spiral_community_chart)

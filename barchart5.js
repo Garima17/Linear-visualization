@@ -104,6 +104,8 @@
       .attr("height", function (d) { return height - y(d.y); })
       .on("mouseover", function(event, d) {
          activeCommunity = d.x
+         adjacent_community = community_connections_list[activeCommunity]
+
          d3.selectAll("rect")
           .classed("barLight", function(d) {
              if ( d.x == activeCommunity) return true;
@@ -115,13 +117,24 @@
              else return false;
           })
 
-
+          
+          
+         
           d3.selectAll("circle")
           .attr("opacity", function(d){
             if(d.community == activeCommunity) return 1
             else return .1} )
 
-          all_lines = d3.selectAll("line")
+          // to highligh community nodes on axis  
+          d3.selectAll(".comm_nodes")
+          .selectAll("circle")
+          .attr("opacity", function(d){
+            if(d.id == activeCommunity) return 1
+            else return .1} )
+          
+            draw_coarse_graph_in_side_window(adjacent_community, activeCommunity)
+
+         /* all_lines = d3.selectAll("line")
                         .nodes()
           for (each in all_lines){
             if(
@@ -133,7 +146,7 @@
             else
             all_lines[each].style.strokeOpacity = 0;
 
-          }
+          }*/
 
 
         })
